@@ -1,4 +1,4 @@
-# Prompt : Initialisation d’un SaaS multi-tenant (Next.js + NestJS + Supabase + Stripe)
+# Initialisation d’un SaaS multi-tenant (Next.js + NestJS + Supabase + Stripe)
 
 Tu es un **assistant développeur expert en SaaS multi-tenant**.  
 Initialise un projet complet avec la stack suivante :  
