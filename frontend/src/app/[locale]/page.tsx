@@ -1,14 +1,17 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { locales } from '@/i18n'
+import SimpleLanguageSwitcher from '@/components/SimpleLanguageSwitcher'
+import { getTranslation, type Locale } from '@/lib/translations'
 
 export function generateStaticParams() {
   return locales.map((locale) => ({locale}))
 }
 
-import SimpleLanguageSwitcher from '@/components/SimpleLanguageSwitcher'
-
 export default function HomePage({ params }: { params: { locale: string } }) {
+  const t = (key: keyof typeof import('@/lib/translations').translations.fr) => 
+    getTranslation(params.locale as Locale, key)
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 min-h-screen">
       {/* Background Pattern */}
@@ -24,10 +27,10 @@ export default function HomePage({ params }: { params: { locale: string } }) {
         <main className="flex flex-col items-center justify-center w-full flex-1 px-6 sm:px-12 lg:px-20 text-center">
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-8">
           <span className="bg-gradient-to-r from-slate-800 via-blue-900 to-slate-900 bg-clip-text text-transparent">
-            Bienvenue sur{' '}
+            {t('welcome')}{' '}
           </span>
           <span className="bg-gradient-to-r from-blue-700 to-teal-700 bg-clip-text text-transparent">
-            CityGrid
+            {t('appName')}
           </span>
         </h1>
 
@@ -35,14 +38,14 @@ export default function HomePage({ params }: { params: { locale: string } }) {
           <div className="text-center flex flex-col justify-center items-center min-h-[120px]">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-blue-700 via-teal-700 to-slate-700 bg-clip-text text-transparent">
-                IEU
+                {t('ieuTitle')}
               </span>
             </h2>
             <p className="text-xl font-bold text-slate-800 mb-3">
-              Indice d'Équipement Urbain
+              {t('ieuSubtitle')}
             </p>
             <p className="text-base text-slate-700 leading-relaxed max-w-4xl mx-auto">
-              Calculez et analysez les indices d'équipement urbain de vos territoires pour une planification urbaine optimale et conforme aux réglementations en vigueur.
+              {t('ieuDescription')}
             </p>
           </div>
         </div>
@@ -53,7 +56,7 @@ export default function HomePage({ params }: { params: { locale: string } }) {
               size="lg" 
               className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold px-10 py-5 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-lg border-0"
             >
-              Voir vidéo : Comment ça marche
+{t('watchVideo')}
               <svg className="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
               </svg>
@@ -63,7 +66,7 @@ export default function HomePage({ params }: { params: { locale: string } }) {
             size="lg"
             className="bg-gradient-to-r from-blue-700 to-teal-700 hover:from-blue-800 hover:to-teal-800 text-white font-semibold px-10 py-5 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 text-lg border-0"
           >
-            Demander une démo
+{t('requestDemo')}
             <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
@@ -74,7 +77,7 @@ export default function HomePage({ params }: { params: { locale: string } }) {
               size="lg"
               className="border-2 border-slate-400 hover:border-blue-600 text-slate-700 hover:text-blue-700 font-semibold px-10 py-5 rounded-xl transition-all duration-300 hover:-translate-y-1 bg-white/90 backdrop-blur-sm hover:bg-white hover:shadow-lg text-lg"
             >
-              Se connecter
+{t('login')}
             </Button>
           </Link>
         </div>
@@ -89,9 +92,9 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Référentiel</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">{t('referential')}</h3>
               <p className="text-slate-600 leading-relaxed">
-                Gérez vos catégories, types d'équipements et seuils de conformité
+                {t('referentialDescription')}
               </p>
             </div>
           </div>
@@ -105,9 +108,9 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Projets</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">{t('projects')}</h3>
               <p className="text-slate-600 leading-relaxed">
-                Suivez vos projets et équipements avec géolocalisation
+                {t('projectsDescription')}
               </p>
             </div>
           </div>
@@ -121,9 +124,9 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Conformité</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">{t('compliance')}</h3>
               <p className="text-slate-600 leading-relaxed">
-                Vérifiez la conformité réglementaire de vos projets
+                {t('complianceDescription')}
               </p>
             </div>
           </div>
@@ -145,16 +148,16 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                 </div>
               </div>
               
-              <h3 className="text-2xl font-bold text-slate-900 mb-2">Analytics & IEU</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-2">{t('analytics')}</h3>
               
               <div className="mb-3">
                 <p className="text-sm font-semibold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 to-blue-700">
-                  Indice d'Équipement Urbain
+                  {t('analyticsSubtitle')}
                 </p>
               </div>
               
               <p className="text-slate-700 leading-relaxed text-sm mb-4">
-                Tableaux de bord avancés et calcul des indices IEU pour vos territoires
+                {t('analyticsDescription')}
               </p>
               
               <div className="flex flex-wrap gap-2">
@@ -181,9 +184,9 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Administration</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">{t('administration')}</h3>
               <p className="text-slate-600 leading-relaxed">
-                Gestion de l'arborescence administrative B2G configurable
+                {t('administrationDescription')}
               </p>
               <div className="mt-3">
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
