@@ -7,6 +7,7 @@ import { ReferentielModule } from './referentiel/referentiel.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { StripeModule } from './stripe/stripe.module';
 import { AdministrativeModule } from './administrative/administrative.module';
+import { ContractsModule } from './contracts/contracts.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -23,6 +24,7 @@ import { AppService } from './app.service';
     AnalyticsModule,
     StripeModule,
     AdministrativeModule,
+    ContractsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

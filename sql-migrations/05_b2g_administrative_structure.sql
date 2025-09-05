@@ -35,16 +35,7 @@ CREATE TABLE administrative_node (
   metadata JSONB DEFAULT '{}', -- Données spécifiques (maire, contact, etc.)
   active BOOLEAN DEFAULT true,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- Contrainte : le parent doit être du niveau supérieur
-  CONSTRAINT valid_hierarchy CHECK (
-    parent_id IS NULL OR 
-    (SELECT al_parent.level_order FROM administrative_level al_parent 
-     JOIN administrative_node an_parent ON an_parent.level_id = al_parent.id 
-     WHERE an_parent.id = parent_id) < 
-    (SELECT al_child.level_order FROM administrative_level al_child 
-     WHERE al_child.id = level_id)
-  )
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Permissions par nœud administratif
@@ -267,7 +258,11 @@ CREATE TRIGGER update_administrative_node_updated_at
 -- Données d'exemple pour un État français
 INSERT INTO org (id, name, slug, is_state, country_code, state_code, administrative_system) 
 VALUES ('550e8400-e29b-41d4-a716-446655440001', 'République Française', 'france', true, 'FRA', 'FR', 'french')
-ON CONFLICT (slug) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  is_state = EXCLUDED.is_state,
+  country_code = EXCLUDED.country_code,
+  state_code = EXCLUDED.state_code,
+  administrative_system = EXCLUDED.administrative_system;
 
 -- Configuration des niveaux administratifs français
 INSERT INTO administrative_level (state_id, name, code, level_order, color, icon) VALUES
