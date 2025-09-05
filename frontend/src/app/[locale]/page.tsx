@@ -6,6 +6,8 @@ export function generateStaticParams() {
   return locales.map((locale) => ({locale}))
 }
 
+import SimpleLanguageSwitcher from '@/components/SimpleLanguageSwitcher'
+
 export default function HomePage({ params }: { params: { locale: string } }) {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 min-h-screen">
@@ -14,6 +16,11 @@ export default function HomePage({ params }: { params: { locale: string } }) {
       <div className="absolute inset-0 bg-gradient-to-br from-blue-900/5 via-transparent to-teal-900/5"></div>
       
       <div className="relative flex flex-col items-center justify-center min-h-screen py-12">
+        {/* Language Switcher */}
+        <div className="absolute top-6 right-6">
+          <SimpleLanguageSwitcher currentLocale={params.locale} />
+        </div>
+        
         <main className="flex flex-col items-center justify-center w-full flex-1 px-6 sm:px-12 lg:px-20 text-center">
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-8">
           <span className="bg-gradient-to-r from-slate-800 via-blue-900 to-slate-900 bg-clip-text text-transparent">
