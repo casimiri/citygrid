@@ -1,0 +1,21 @@
+{
+  "welcome": "Welcome to",
+  "appName": "CityGrid",
+  "ieuTitle": "UEI",
+  "ieuSubtitle": "Urban Equipment Index",
+  "ieuDescription": "Calculate and analyze urban equipment indices for your territories for optimal urban planning compliant with current regulations.",
+  "watchVideo": "Watch video: How it works",
+  "requestDemo": "Request a demo",
+  "login": "Sign in",
+  "referential": "Reference",
+  "referentialDescription": "Manage your categories, equipment types and compliance thresholds",
+  "projects": "Projects",
+  "projectsDescription": "Track your projects and equipment with geolocation",
+  "compliance": "Compliance",
+  "complianceDescription": "Verify regulatory compliance of your projects",
+  "analytics": "Analytics & UEI",
+  "analyticsSubtitle": "Urban Equipment Index",
+  "analyticsDescription": "Advanced dashboards and UEI index calculation for your territories",
+  "administration": "Administration",
+  "administrationDescription": "Configurable B2G administrative tree management"
+}

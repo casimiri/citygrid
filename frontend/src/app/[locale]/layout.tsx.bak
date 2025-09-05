@@ -1,0 +1,43 @@
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
+import { AuthProvider } from '@/hooks/useAuth'
+import {NextIntlClientProvider} from 'next-intl'
+import {getMessages} from 'next-intl/server'
+import {notFound} from 'next/navigation'
+import {locales} from '@/i18n'
+
+const inter = Inter({ subsets: ['latin'] })
+
+export const metadata: Metadata = {
+  title: 'CityGrid - Gestion d\'équipements urbains',
+  description: 'SaaS multi-tenant pour la gestion et la conformité d\'équipements urbains',
+}
+
+export function generateStaticParams() {
+  return locales.map((locale) => ({locale}))
+}
+
+export default async function LocaleLayout({
+  children,
+  params
+}: {
+  children: React.ReactNode
+  params: {locale: string}
+}) {
+  const { locale } = params
+  // Validate locale
+  if (!locales.includes(locale as any)) {
+    notFound()
+  }
+
+  const messages = await getMessages()
+
+  return (
+    <NextIntlClientProvider messages={messages}>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+    </NextIntlClientProvider>
+  )
+}

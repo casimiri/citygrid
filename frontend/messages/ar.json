@@ -1,0 +1,21 @@
+{
+  "welcome": "أهلاً بك في",
+  "appName": "CityGrid",
+  "ieuTitle": "IEU",
+  "ieuSubtitle": "مؤشر المعدات الحضرية",
+  "ieuDescription": "احسب وحلل مؤشرات المعدات الحضرية لأراضيك للتخطيط الحضري الأمثل والمتوافق مع اللوائح الحالية.",
+  "watchVideo": "شاهد الفيديو: كيف يعمل",
+  "requestDemo": "طلب عرض توضيحي",
+  "login": "تسجيل الدخول",
+  "referential": "المرجع",
+  "referentialDescription": "إدارة فئاتك وأنواع المعدات وعتبات الامتثال",
+  "projects": "المشاريع",
+  "projectsDescription": "تتبع مشاريعك ومعداتك مع الموقع الجغرافي",
+  "compliance": "الامتثال",
+  "complianceDescription": "تحقق من الامتثال التنظيمي لمشاريعك",
+  "analytics": "التحليلات & IEU",
+  "analyticsSubtitle": "مؤشر المعدات الحضرية",
+  "analyticsDescription": "لوحات معلومات متقدمة وحساب مؤشرات IEU لأراضيك",
+  "administration": "الإدارة",
+  "administrationDescription": "إدارة الشجرة الإدارية B2G القابلة للتكوين"
+}

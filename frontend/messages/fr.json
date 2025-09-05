@@ -1,0 +1,21 @@
+{
+  "welcome": "Bienvenue sur",
+  "appName": "CityGrid",
+  "ieuTitle": "IEU",
+  "ieuSubtitle": "Indice d'Équipement Urbain",
+  "ieuDescription": "Calculez et analysez les indices d'équipement urbain de vos territoires pour une planification urbaine optimale et conforme aux réglementations en vigueur.",
+  "watchVideo": "Voir vidéo : Comment ça marche",
+  "requestDemo": "Demander une démo",
+  "login": "Se connecter",
+  "referential": "Référentiel",
+  "referentialDescription": "Gérez vos catégories, types d'équipements et seuils de conformité",
+  "projects": "Projets",
+  "projectsDescription": "Suivez vos projets et équipements avec géolocalisation",
+  "compliance": "Conformité",
+  "complianceDescription": "Vérifiez la conformité réglementaire de vos projets",
+  "analytics": "Analytics & IEU",
+  "analyticsSubtitle": "Indice d'Équipement Urbain",
+  "analyticsDescription": "Tableaux de bord avancés et calcul des indices IEU pour vos territoires",
+  "administration": "Administration",
+  "administrationDescription": "Gestion de l'arborescence administrative B2G configurable"
+}
