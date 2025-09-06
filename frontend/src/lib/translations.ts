@@ -103,6 +103,27 @@ export const translations = {
     analyticsDescription: "لوحات معلومات متقدمة وحساب مؤشر المعدات الحضرية لأراضيكم",
     administration: "الإدارة",
     administrationDescription: "إدارة الشجرة الإدارية B2G القابلة للتكوين"
+  },
+  it: {
+    welcome: "Benvenuti su",
+    appName: "CityGrid",
+    ieuTitle: "IEU",
+    ieuSubtitle: "Indice di Attrezzatura Urbana",
+    ieuDescription: "Calcolate e analizzate gli indici di attrezzatura urbana dei vostri territori per una pianificazione urbana ottimale e conforme alle normative vigenti.",
+    watchVideo: "Guarda Video: Come Funziona",
+    requestDemo: "Richiedi una Demo",
+    login: "Accedi",
+    referential: "Riferimenti",
+    referentialDescription: "Gestite le vostre categorie, tipi di attrezzature e soglie di conformità",
+    projects: "Progetti",
+    projectsDescription: "Seguite i vostri progetti e attrezzature con geolocalizzazione",
+    compliance: "Conformità",
+    complianceDescription: "Verificate la conformità normativa dei vostri progetti",
+    analytics: "Analytics & IEU",
+    analyticsSubtitle: "Indice di Attrezzatura Urbana",
+    analyticsDescription: "Dashboard avanzati e calcolo degli indici IEU per i vostri territori",
+    administration: "Amministrazione",
+    administrationDescription: "Gestione dell'alberatura amministrativa B2G configurabile"
   }
 }
 

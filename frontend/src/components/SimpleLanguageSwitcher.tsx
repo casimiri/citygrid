@@ -8,7 +8,8 @@ export default function SimpleLanguageSwitcher({ currentLocale }: { currentLocal
     en: 'English', 
     fr: 'Français',
     es: 'Español',
-    pt: 'Português'
+    pt: 'Português',
+    it: 'Italiano'
   }
 
   const languageFlags = {
@@ -16,7 +17,8 @@ export default function SimpleLanguageSwitcher({ currentLocale }: { currentLocal
     en: '🇺🇸',
     fr: '🇫🇷',
     es: '🇪🇸', 
-    pt: '🇵🇹'
+    pt: '🇵🇹',
+    it: '🇮🇹'
   }
 
   return (

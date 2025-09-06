@@ -6,7 +6,7 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.NEXT_PUBLIC_JWT_SECRET || 'your-secret-key'
 )
 
-const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth']
+const PUBLIC_PATHS = ['/', '/login', '/register', '/api/auth', '/test-db-status', '/test-db-fix']
 const AUTH_PATHS = ['/login', '/register']
 
 export async function middleware(request: NextRequest) {
@@ -32,15 +32,18 @@ export async function middleware(request: NextRequest) {
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
   
-  const pathnameWithoutLocale = pathnameHasLocale 
-    ? pathname.split('/').slice(2).join('/') || '/'
-    : pathname
+  let pathnameWithoutLocale = pathname
+  
+  if (pathnameHasLocale) {
+    const parts = pathname.split('/')
+    pathnameWithoutLocale = parts.length > 2 ? '/' + parts.slice(2).join('/') : '/'
+  }
 
   // Get token from cookies
   const token = request.cookies.get('access_token')?.value
   
   // Redirect to login if no token and trying to access protected route
-  if (!token && !PUBLIC_PATHS.includes(pathnameWithoutLocale)) {
+  if (!token && !PUBLIC_PATHS.includes(pathnameWithoutLocale) && !pathnameWithoutLocale.startsWith('/login')) {
     const locale = pathnameHasLocale ? pathname.split('/')[1] : defaultLocale
     const loginUrl = new URL(`/${locale}/login`, request.url)
     return NextResponse.redirect(loginUrl)

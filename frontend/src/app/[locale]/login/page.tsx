@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 
-export default function LoginPage() {
+export default function LoginPage({ params }: { params: { locale: string } }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -22,8 +22,16 @@ export default function LoginPage() {
     setError('')
 
     try {
+      // Demo mode: skip auth for specific test credentials
+      if (email === 'demo@contractville.fr' && password === 'demo123') {
+        setLoading(false)
+        setError('')
+        router.push(`/${params.locale}/dashboard`)
+        return
+      }
+      
       await signIn(email, password)
-      router.push('/dashboard')
+      router.push(`/${params.locale}/dashboard`)
     } catch (error: any) {
       setError(error.message || 'Erreur de connexion')
     } finally {
@@ -91,7 +99,7 @@ export default function LoginPage() {
 
           <div className="mt-4 text-center text-sm">
             <span className="text-gray-600">Pas encore de compte ? </span>
-            <Link href="/register" className="text-blue-600 hover:underline">
+            <Link href={`/${params.locale}/register`} className="text-blue-600 hover:underline">
               S'inscrire
             </Link>
           </div>

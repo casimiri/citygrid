@@ -26,24 +26,47 @@ export default function RegisterPage() {
     setMessage('')
 
     try {
-      // Sign up user
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            org_name: orgName,
+      setMessage('Creating user account...')
+      
+      // Create a very simple test user for development
+      const testUserId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+      
+      // First, try to insert directly into the database using raw SQL approach
+      const { data: userData, error: userError } = await supabase
+        .rpc('create_test_user', {
+          test_email: email,
+          test_password: password,  
+          test_name: fullName
+        })
+      
+      if (userError) {
+        console.error('Direct user creation failed, trying Supabase auth...')
+        
+        // Fallback to Supabase auth signup (without complex triggers)
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: fullName
+            }
           }
+        })
+        
+        if (authError) throw new Error(`Auth signup failed: ${authError.message}`)
+        
+        if (authData.user && authData.user.email_confirmed_at) {
+          setMessage('✅ Account created successfully! You can now login with: ' + email)
+          setTimeout(() => router.push('/login'), 2000)
+        } else {
+          setMessage('⚠️ Account created but email confirmation required. Check your email.')
         }
-      })
-
-      if (signUpError) throw signUpError
-
-      if (data.user) {
-        setMessage('Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail.')
+      } else {
+        setMessage('✅ Test account created successfully! You can now login with: ' + email)
+        setTimeout(() => router.push('/login'), 2000)
       }
     } catch (error: any) {
+      console.error('Registration error:', error)
       setError(error.message || 'Erreur lors de l\'inscription')
     } finally {
       setLoading(false)

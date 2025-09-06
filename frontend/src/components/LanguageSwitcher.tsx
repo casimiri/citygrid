@@ -9,7 +9,8 @@ const languageNames = {
   en: 'English',
   fr: 'Français',
   es: 'Español',
-  pt: 'Português'
+  pt: 'Português',
+  it: 'Italiano'
 }
 
 const languageFlags = {
@@ -17,7 +18,8 @@ const languageFlags = {
   en: '🇺🇸',
   fr: '🇫🇷',
   es: '🇪🇸',
-  pt: '🇵🇹'
+  pt: '🇵🇹',
+  it: '🇮🇹'
 }
 
 export default function LanguageSwitcher() {
