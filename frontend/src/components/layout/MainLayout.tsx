@@ -14,7 +14,10 @@ import {
   LogOut,
   Menu,
   ChevronDown,
-  MapPin
+  MapPin,
+  User,
+  Building,
+  Globe
 } from 'lucide-react'
 
 interface MainLayoutProps {
@@ -24,15 +27,18 @@ interface MainLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Administration', href: '/dashboard/administration', icon: MapPin },
-  { name: 'Référentiel', href: '/referentiel', icon: Building2 },
-  { name: 'Projets', href: '/projets', icon: Folder },
-  { name: 'Calculateur', href: '/outils/calculateur', icon: Calculator },
-  { name: 'Paramètres', href: '/parametres', icon: Settings },
+  { name: 'Référentiel', href: '/dashboard/referentiel', icon: Building2 },
+  { name: 'Projets', href: '/dashboard/projets', icon: Folder },
+  { name: 'Calculateur', href: '/dashboard/calculateur', icon: Calculator },
+  { name: 'Paramètres', href: '/dashboard/parametres', icon: Settings },
 ]
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const pathname = usePathname()
   const { user, organization, memberships, role, signOut, switchOrg } = useAuth()
+  
+  // Extract locale from pathname
+  const locale = pathname.split('/')[1] || 'fr'
 
   const handleSignOut = async () => {
     await signOut()
@@ -47,7 +53,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {/* Sidebar */}
       <div className="flex flex-col w-64 bg-white shadow-lg">
         <div className="flex items-center justify-center h-16 bg-blue-600">
-          <Link href="/dashboard" className="text-xl font-bold text-white">
+          <Link href={`/${locale}/dashboard`} className="text-xl font-bold text-white">
             CityGrid
           </Link>
         </div>
@@ -86,13 +92,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navigation.map((item) => {
-            const isActive = pathname.startsWith(item.href)
+            const localizedHref = `/${locale}${item.href}`
+            const isActive = pathname.startsWith(localizedHref)
             const Icon = item.icon
             
             return (
               <Link
                 key={item.name}
-                href={item.href}
+                href={localizedHref}
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   isActive
                     ? 'bg-blue-100 text-blue-700'
@@ -136,13 +143,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </Button>
               <div className="hidden md:flex items-center space-x-6">
                 {navigation.map((item) => {
-                  const isActive = pathname.startsWith(item.href)
+                  const localizedHref = `/${locale}${item.href}`
+                  const isActive = pathname.startsWith(localizedHref)
                   const Icon = item.icon
                   
                   return (
                     <Link
                       key={item.name}
-                      href={item.href}
+                      href={localizedHref}
                       className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                         isActive
                           ? 'bg-blue-100 text-blue-700'
@@ -157,33 +165,47 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
             </div>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-6">
+              {/* Language indicator (placeholder for now) */}
+              <div className="flex items-center space-x-2 text-gray-600">
+                <Globe className="w-4 h-4" />
+                <span className="text-sm">FR</span>
+              </div>
+
               {/* Organization info in top bar */}
               {organization && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <span className="text-gray-500">Organisation:</span>
-                  <span className="font-medium">{organization.name}</span>
-                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full capitalize">
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
+                  <Building className="w-5 h-5 text-blue-600" />
+                  <div className="flex flex-col">
+                    <div className="text-sm font-semibold text-gray-900">
+                      {organization.name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Organisation
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 text-xs bg-blue-600 text-white rounded-full capitalize font-medium">
                     {role}
                   </span>
                 </div>
               )}
               
               {/* User menu */}
-              <div className="flex items-center space-x-3">
-                <div className="text-right hidden sm:block">
-                  <div className="text-sm font-medium text-gray-900">
-                    {user?.full_name || user?.email}
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
+                <User className="w-5 h-5 text-green-600" />
+                <div className="text-right">
+                  <div className="text-sm font-semibold text-gray-900">
+                    {user?.full_name || 'Utilisateur'}
                   </div>
                   <div className="text-xs text-gray-500">
-                    {user?.email}
+                    {user?.email || 'user@example.com'}
                   </div>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-900"
+                  className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 >
                   <LogOut className="w-4 h-4" />
                 </Button>

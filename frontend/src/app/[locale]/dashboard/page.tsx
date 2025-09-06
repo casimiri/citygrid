@@ -78,9 +78,19 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <div className="text-sm text-gray-500">
-          Dernière mise à jour : {kpis?.lastUpdated ? new Date(kpis.lastUpdated).toLocaleString('fr-FR') : 'N/A'}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-lg text-gray-600 mt-2">
+            Vue d'ensemble de votre organisation et de vos projets
+          </p>
+        </div>
+        <div className="text-right">
+          <div className="text-sm text-gray-500 mb-1">
+            Dernière mise à jour
+          </div>
+          <div className="text-sm font-medium text-gray-900">
+            {kpis?.lastUpdated ? new Date(kpis.lastUpdated).toLocaleString('fr-FR') : 'N/A'}
+          </div>
         </div>
       </div>
 
