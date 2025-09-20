@@ -27,44 +27,30 @@ export default function RegisterPage() {
 
     try {
       setMessage('Creating user account...')
-      
-      // Create a very simple test user for development
-      const testUserId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
-      
-      // First, try to insert directly into the database using raw SQL approach
-      const { data: userData, error: userError } = await supabase
-        .rpc('create_test_user', {
-          test_email: email,
-          test_password: password,  
-          test_name: fullName
-        })
-      
-      if (userError) {
-        console.error('Direct user creation failed, trying Supabase auth...')
-        
-        // Fallback to Supabase auth signup (without complex triggers)
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+
+      // Use our backend API for registration
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           email,
           password,
-          options: {
-            data: {
-              full_name: fullName
-            }
-          }
+          fullName,
+          orgName
         })
-        
-        if (authError) throw new Error(`Auth signup failed: ${authError.message}`)
-        
-        if (authData.user && authData.user.email_confirmed_at) {
-          setMessage('✅ Account created successfully! You can now login with: ' + email)
-          setTimeout(() => router.push('/login'), 2000)
-        } else {
-          setMessage('⚠️ Account created but email confirmation required. Check your email.')
-        }
-      } else {
-        setMessage('✅ Test account created successfully! You can now login with: ' + email)
-        setTimeout(() => router.push('/login'), 2000)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Registration failed' }))
+        throw new Error(errorData.message || `HTTP ${response.status}`)
       }
+
+      const data = await response.json()
+
+      setMessage('✅ Account created successfully! You can now login with: ' + email)
+      setTimeout(() => router.push('/login'), 2000)
     } catch (error: any) {
       console.error('Registration error:', error)
       setError(error.message || 'Erreur lors de l\'inscription')

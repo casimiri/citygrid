@@ -148,6 +148,7 @@ export default function AdministrationPage() {
   const [loading, setLoading] = useState(true)
   const [isLevelDialogOpen, setIsLevelDialogOpen] = useState(false)
   const [isNodeDialogOpen, setIsNodeDialogOpen] = useState(false)
+  const [editingLevel, setEditingLevel] = useState<AdministrativeLevel | null>(null)
   const [newLevel, setNewLevel] = useState({
     name: '',
     code: '',
@@ -156,6 +157,7 @@ export default function AdministrationPage() {
     icon: 'map',
     requires_parent: true
   })
+  const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [newNode, setNewNode] = useState({
     parent_id: '',
     level_id: '',
@@ -165,6 +167,29 @@ export default function AdministrationPage() {
     population: '',
     area_sqm: ''
   })
+
+  const validateLevel = (level: typeof newLevel) => {
+    const newErrors: { [key: string]: string } = {}
+    
+    if (!level.name.trim()) {
+      newErrors.name = 'Le nom est obligatoire'
+    }
+    
+    if (!level.code.trim()) {
+      newErrors.code = 'Le code est obligatoire'
+    } else if (levels.some(l => l.code === level.code && l.id !== editingLevel?.id)) {
+      newErrors.code = 'Ce code existe déjà'
+    }
+    
+    if (level.level_order < 1) {
+      newErrors.level_order = 'L\'ordre doit être supérieur à 0'
+    } else if (levels.some(l => l.level_order === level.level_order && l.id !== editingLevel?.id)) {
+      newErrors.level_order = 'Cet ordre existe déjà'
+    }
+    
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const fetchData = async () => {
     try {
@@ -189,24 +214,93 @@ export default function AdministrationPage() {
     fetchData()
   }, [])
 
+  const resetLevelForm = () => {
+    setNewLevel({
+      name: '',
+      code: '',
+      level_order: levels.length + 1,
+      color: '#6366f1',
+      icon: 'map',
+      requires_parent: true
+    })
+    setEditingLevel(null)
+    setErrors({})
+  }
+
   const handleCreateLevel = async () => {
+    if (!validateLevel(newLevel)) return
+    
     try {
       const stateId = localStorage.getItem('currentOrgId')
       if (!stateId) return
 
-      await administrativeAPI.createLevel(stateId, newLevel)
-      setNewLevel({
-        name: '',
-        code: '',
-        level_order: levels.length + 1,
-        color: '#6366f1',
-        icon: 'map',
-        requires_parent: true
-      })
+      if (editingLevel) {
+        await administrativeAPI.updateLevel(stateId, editingLevel.id, newLevel)
+      } else {
+        await administrativeAPI.createLevel(stateId, newLevel)
+      }
+      
+      resetLevelForm()
       setIsLevelDialogOpen(false)
       fetchData()
     } catch (error) {
-      console.error('Error creating level:', error)
+      console.error('Error saving level:', error)
+      setErrors({ general: 'Erreur lors de la sauvegarde du niveau' })
+    }
+  }
+
+  const handleEditLevel = (level: AdministrativeLevel) => {
+    setEditingLevel(level)
+    setNewLevel({
+      name: level.name,
+      code: level.code,
+      level_order: level.level_order,
+      color: level.color,
+      icon: level.icon,
+      requires_parent: level.requires_parent
+    })
+    setIsLevelDialogOpen(true)
+  }
+
+  const handleDeleteLevel = async (levelId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce niveau ? Cette action est irréversible.')) {
+      return
+    }
+    
+    try {
+      const stateId = localStorage.getItem('currentOrgId')
+      if (!stateId) return
+
+      await administrativeAPI.deleteLevel(stateId, levelId)
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting level:', error)
+    }
+  }
+
+  const handleReorderLevels = async (fromIndex: number, toIndex: number) => {
+    try {
+      const stateId = localStorage.getItem('currentOrgId')
+      if (!stateId) return
+
+      const sortedLevels = [...levels].sort((a, b) => a.level_order - b.level_order)
+      const [movedLevel] = sortedLevels.splice(fromIndex, 1)
+      sortedLevels.splice(toIndex, 0, movedLevel)
+
+      const reorderedLevels = sortedLevels.map((level, index) => ({
+        ...level,
+        level_order: index + 1
+      }))
+
+      await Promise.all(
+        reorderedLevels.map(level => 
+          administrativeAPI.updateLevel(stateId, level.id, level)
+        )
+      )
+
+      fetchData()
+    } catch (error) {
+      console.error('Error reordering levels:', error)
     }
   }
 
@@ -364,7 +458,10 @@ export default function AdministrationPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Structure Administrative</h1>
         <div className="flex gap-2">
-          <Dialog open={isLevelDialogOpen} onOpenChange={setIsLevelDialogOpen}>
+          <Dialog open={isLevelDialogOpen} onOpenChange={(open) => {
+            setIsLevelDialogOpen(open)
+            if (!open) resetLevelForm()
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Settings className="w-4 h-4 mr-2" />
@@ -373,9 +470,16 @@ export default function AdministrationPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
-                <DialogTitle>Créer un nouveau niveau administratif</DialogTitle>
+                <DialogTitle>
+                  {editingLevel ? 'Modifier le niveau administratif' : 'Créer un nouveau niveau administratif'}
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
+                {errors.general && (
+                  <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
+                    {errors.general}
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="name">Nom du niveau</Label>
@@ -384,7 +488,9 @@ export default function AdministrationPage() {
                       value={newLevel.name}
                       onChange={(e) => setNewLevel({ ...newLevel, name: e.target.value })}
                       placeholder="ex: Région"
+                      className={errors.name ? 'border-red-500' : ''}
                     />
+                    {errors.name && <span className="text-xs text-red-600">{errors.name}</span>}
                   </div>
                   <div>
                     <Label htmlFor="code">Code</Label>
@@ -393,7 +499,9 @@ export default function AdministrationPage() {
                       value={newLevel.code}
                       onChange={(e) => setNewLevel({ ...newLevel, code: e.target.value })}
                       placeholder="ex: region"
+                      className={errors.code ? 'border-red-500' : ''}
                     />
+                    {errors.code && <span className="text-xs text-red-600">{errors.code}</span>}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -404,7 +512,9 @@ export default function AdministrationPage() {
                       type="number"
                       value={newLevel.level_order}
                       onChange={(e) => setNewLevel({ ...newLevel, level_order: parseInt(e.target.value) })}
+                      className={errors.level_order ? 'border-red-500' : ''}
                     />
+                    {errors.level_order && <span className="text-xs text-red-600">{errors.level_order}</span>}
                   </div>
                   <div>
                     <Label htmlFor="color">Couleur</Label>
@@ -416,8 +526,35 @@ export default function AdministrationPage() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="icon">Icône</Label>
+                    <Select value={newLevel.icon} onValueChange={(value) => setNewLevel({ ...newLevel, icon: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="map">📍 Carte</SelectItem>
+                        <SelectItem value="building">🏢 Bâtiment</SelectItem>
+                        <SelectItem value="home">🏠 Maison</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-center space-x-2 pt-6">
+                    <input
+                      type="checkbox"
+                      id="requires_parent"
+                      checked={newLevel.requires_parent}
+                      onChange={(e) => setNewLevel({ ...newLevel, requires_parent: e.target.checked })}
+                      className="w-4 h-4"
+                    />
+                    <Label htmlFor="requires_parent" className="text-sm">
+                      Nécessite un parent
+                    </Label>
+                  </div>
+                </div>
                 <Button onClick={handleCreateLevel} className="w-full">
-                  Créer le niveau
+                  {editingLevel ? 'Modifier le niveau' : 'Créer le niveau'}
                 </Button>
               </div>
             </DialogContent>
@@ -564,36 +701,114 @@ export default function AdministrationPage() {
       {levels.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Configuration des niveaux administratifs</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              Configuration des niveaux administratifs
+              <Badge variant="outline">{levels.length} niveau{levels.length > 1 ? 'x' : ''}</Badge>
+            </CardTitle>
+            <p className="text-sm text-gray-600">
+              Gérez les niveaux hiérarchiques de votre structure administrative
+            </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {levels
                 .sort((a, b) => a.level_order - b.level_order)
-                .map((level) => (
+                .map((level, index) => (
                   <div
                     key={level.id}
-                    className="flex items-center justify-between p-3 border rounded-lg"
+                    className="flex items-center justify-between p-4 border rounded-lg hover:shadow-md transition-shadow"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 text-gray-400">
+                        <span className="text-xs font-mono bg-gray-100 px-2 py-1 rounded">
+                          #{level.level_order}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
                         <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: level.color }}
+                          className="w-5 h-5 rounded-full border-2" 
+                          style={{ backgroundColor: level.color, borderColor: level.color }}
                         />
-                        <span className="font-medium">{level.name}</span>
-                        <Badge variant="outline">Niveau {level.level_order}</Badge>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{level.name}</span>
+                            <Badge variant="outline" className="text-xs">
+                              {level.code.toUpperCase()}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>{level.icon === 'map' ? '📍' : level.icon === 'building' ? '🏢' : '🏠'}</span>
+                            {level.requires_parent && (
+                              <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                                Parent requis
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
+
                     <div className="flex items-center gap-2">
-                      <Badge variant="secondary">{level.code}</Badge>
-                      {level.requires_parent && (
-                        <Badge variant="outline">Nécessite parent</Badge>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {/* Move up button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReorderLevels(index, index - 1)}
+                          disabled={index === 0}
+                          className="w-8 h-8 p-0"
+                        >
+                          ⬆️
+                        </Button>
+                        {/* Move down button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleReorderLevels(index, index + 1)}
+                          disabled={index === levels.length - 1}
+                          className="w-8 h-8 p-0"
+                        >
+                          ⬇️
+                        </Button>
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditLevel(level)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Modifier
+                      </Button>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteLevel(level.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash className="w-4 h-4 mr-1" />
+                        Supprimer
+                      </Button>
                     </div>
                   </div>
                 ))}
             </div>
+            
+            {levels.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Settings className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <h3 className="font-medium mb-2">Aucun niveau configuré</h3>
+                <p className="text-sm mb-4">
+                  Commencez par créer votre premier niveau administratif
+                </p>
+                <Button onClick={() => setIsLevelDialogOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Créer un niveau
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
