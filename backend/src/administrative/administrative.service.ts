@@ -116,6 +116,79 @@ export class AdministrativeService {
     return data;
   }
 
+  async updateAdministrativeLevel(
+    stateId: string,
+    levelId: string,
+    updateDto: Partial<CreateAdministrativeLevelDto>,
+    user: JwtPayload
+  ): Promise<AdministrativeLevel> {
+    await this.ensureStateAccess(stateId, user);
+
+    // Vérifier que le niveau existe et appartient à l'État
+    const { data: existingLevel, error: checkError } = await this.supabase.getClient()
+      .from('administrative_level')
+      .select('id')
+      .eq('id', levelId)
+      .eq('state_id', stateId)
+      .single();
+
+    if (checkError || !existingLevel) {
+      throw new NotFoundException('Niveau administratif non trouvé');
+    }
+
+    const { data, error } = await this.supabase.getClient()
+      .from('administrative_level')
+      .update(updateDto)
+      .eq('id', levelId)
+      .eq('state_id', stateId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteAdministrativeLevel(
+    stateId: string,
+    levelId: string,
+    user: JwtPayload
+  ): Promise<void> {
+    await this.ensureStateAccess(stateId, user);
+
+    // Vérifier que le niveau existe et appartient à l'État
+    const { data: existingLevel, error: checkError } = await this.supabase.getClient()
+      .from('administrative_level')
+      .select('id')
+      .eq('id', levelId)
+      .eq('state_id', stateId)
+      .single();
+
+    if (checkError || !existingLevel) {
+      throw new NotFoundException('Niveau administratif non trouvé');
+    }
+
+    // Vérifier qu'aucun nœud n'utilise ce niveau
+    const { data: nodes, error: nodesError } = await this.supabase.getClient()
+      .from('administrative_node')
+      .select('id')
+      .eq('level_id', levelId)
+      .limit(1);
+
+    if (nodesError) throw nodesError;
+
+    if (nodes && nodes.length > 0) {
+      throw new ForbiddenException('Impossible de supprimer ce niveau car il est utilisé par des nœuds administratifs');
+    }
+
+    const { error } = await this.supabase.getClient()
+      .from('administrative_level')
+      .delete()
+      .eq('id', levelId)
+      .eq('state_id', stateId);
+
+    if (error) throw error;
+  }
+
   async getAdministrativeTree(stateId: string, user: JwtPayload): Promise<AdministrativeTreeNode[]> {
     await this.ensureStateAccess(stateId, user);
 

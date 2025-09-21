@@ -48,6 +48,30 @@ export class AdministrativeController {
     return this.administrativeService.createAdministrativeLevel(stateId, createDto, user);
   }
 
+  @Put('states/:stateId/levels/:levelId')
+  @ApiOperation({ summary: 'Mettre à jour un niveau administratif' })
+  @ApiResponse({ status: 200, description: 'Niveau administratif mis à jour' })
+  async updateAdministrativeLevel(
+    @Param('stateId') stateId: string,
+    @Param('levelId') levelId: string,
+    @Body() updateDto: Partial<CreateAdministrativeLevelDto>,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.administrativeService.updateAdministrativeLevel(stateId, levelId, updateDto, user);
+  }
+
+  @Delete('states/:stateId/levels/:levelId')
+  @ApiOperation({ summary: 'Supprimer un niveau administratif' })
+  @ApiResponse({ status: 200, description: 'Niveau administratif supprimé' })
+  async deleteAdministrativeLevel(
+    @Param('stateId') stateId: string,
+    @Param('levelId') levelId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    await this.administrativeService.deleteAdministrativeLevel(stateId, levelId, user);
+    return { message: 'Niveau administratif supprimé avec succès' };
+  }
+
   @Get('states/:stateId/tree')
   @ApiOperation({ summary: 'Récupérer l\'arborescence administrative complète d\'un État' })
   @ApiResponse({ status: 200, description: 'Arborescence administrative' })

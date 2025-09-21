@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { analyticsAPI } from '@/lib/api'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   BarChart, 
   Bar, 
@@ -31,6 +32,7 @@ interface CoverageData {
 }
 
 export default function DashboardPage() {
+  const { user, organization, role } = useAuth()
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null)
   const [coverageData, setCoverageData] = useState<CoverageData[]>([])
   const [loading, setLoading] = useState(true)
@@ -77,21 +79,46 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-lg text-gray-600 mt-2">
-            Vue d'ensemble de votre organisation et de vos projets
-          </p>
-        </div>
-        <div className="text-right">
-          <div className="text-sm text-gray-500 mb-1">
-            Dernière mise à jour
+      {/* Welcome section with user info */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">
+              Bonjour, {user?.full_name || user?.email?.split('@')[0] || 'Utilisateur'}!
+            </h1>
+            <p className="text-blue-100 text-lg">
+              Bienvenue sur votre tableau de bord CityGrid
+            </p>
+            {organization && (
+              <div className="flex items-center space-x-4 mt-4">
+                <div className="bg-blue-500/30 rounded-lg px-3 py-2">
+                  <div className="text-sm font-medium">Organisation</div>
+                  <div className="text-lg font-bold">{organization.name}</div>
+                </div>
+                <div className="bg-blue-500/30 rounded-lg px-3 py-2">
+                  <div className="text-sm font-medium">Rôle</div>
+                  <div className="text-lg font-bold capitalize">{role}</div>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="text-sm font-medium text-gray-900">
-            {kpis?.lastUpdated ? new Date(kpis.lastUpdated).toLocaleString('fr-FR') : 'N/A'}
+          <div className="text-right">
+            <div className="text-sm text-blue-200 mb-1">
+              Dernière mise à jour
+            </div>
+            <div className="text-sm font-medium">
+              {kpis?.lastUpdated ? new Date(kpis.lastUpdated).toLocaleString('fr-FR') : 'N/A'}
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Main dashboard content header */}
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Vue d'ensemble</h2>
+        <p className="text-gray-600 mt-1">
+          Indicateurs clés de performance de votre organisation
+        </p>
       </div>
 
       {/* KPI Cards */}

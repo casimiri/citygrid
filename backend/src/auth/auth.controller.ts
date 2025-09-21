@@ -12,6 +12,11 @@ interface RegisterDto {
   orgName: string;
 }
 
+interface LoginDto {
+  email: string;
+  password: string;
+}
+
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
@@ -23,16 +28,28 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @Post('login')
+  @ApiOperation({ summary: 'Login user' })
+  async login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
+
   @Get('profile')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   async getProfile(@CurrentUser() user: JwtPayload) {
-    const memberships = await this.authService.getUserMemberships(user.sub);
+    const [userProfile, memberships] = await Promise.all([
+      this.authService.getUserProfile(user.sub),
+      this.authService.getUserMemberships(user.sub)
+    ]);
+
     return {
       user: {
         id: user.sub,
         email: user.email,
+        full_name: userProfile.full_name,
+        avatar_url: userProfile.avatar_url,
         currentOrg: user.org_id,
         currentRole: user.role,
       },

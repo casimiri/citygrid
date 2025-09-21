@@ -32,7 +32,7 @@ import {
   Edit,
   Trash
 } from 'lucide-react'
-import { administrativeAPI } from '@/lib/api'
+import { administrativeAPI, authAPI } from '@/lib/api'
 
 interface AdministrativeLevel {
   id: string
@@ -81,51 +81,95 @@ function TreeNode({ node, onNodeClick, selectedNode, level }: TreeNodeProps) {
 
   return (
     <div className="select-none">
-      <div
-        className={`
-          flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors
-          hover:bg-gray-50 ${isSelected ? 'bg-blue-50 border border-blue-200' : ''}
-        `}
-        style={{ marginLeft: level * 20 }}
-        onClick={() => onNodeClick(node)}
-      >
-        {hasChildren ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              setIsExpanded(!isExpanded)
-            }}
-            className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 rounded"
-          >
-            {isExpanded ? (
-              <ChevronDown className="w-3 h-3" />
-            ) : (
-              <ChevronRight className="w-3 h-3" />
-            )}
-          </button>
-        ) : (
-          <div className="w-4 h-4" />
+      <div className="relative">
+        {/* Connecting lines */}
+        {level > 0 && (
+          <>
+            {/* Vertical line from parent */}
+            <div
+              className="absolute border-l-2 border-gray-300"
+              style={{
+                left: level * 20 - 10,
+                top: -8,
+                height: '16px'
+              }}
+            />
+            {/* Horizontal line to node */}
+            <div
+              className="absolute border-t-2 border-gray-300"
+              style={{
+                left: level * 20 - 10,
+                top: 8,
+                width: '10px'
+              }}
+            />
+          </>
         )}
-        
-        <div 
-          className="w-3 h-3 rounded-full border-2" 
-          style={{ backgroundColor: node.level.color, borderColor: node.level.color }}
-        />
-        
-        {getIcon(node.level.icon)}
-        
-        <div className="flex-1 min-w-0">
-          <div className="font-medium text-sm truncate">{node.name}</div>
-          <div className="text-xs text-gray-500 flex items-center gap-4">
-            <span>{node.level.name}</span>
-            {node.code && <span>Code: {node.code}</span>}
-            {node.population && <span><Users className="w-3 h-3 inline mr-1" />{node.population.toLocaleString()}</span>}
+
+        <div
+          className={`
+            flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors relative
+            hover:bg-gray-50 ${isSelected ? 'bg-blue-50 border border-blue-200' : ''}
+          `}
+          style={{ marginLeft: level * 20 }}
+          onClick={() => onNodeClick(node)}
+        >
+          {hasChildren ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsExpanded(!isExpanded)
+              }}
+              className="w-4 h-4 flex items-center justify-center hover:bg-gray-200 rounded"
+            >
+              {isExpanded ? (
+                <ChevronDown className="w-3 h-3" />
+              ) : (
+                <ChevronRight className="w-3 h-3" />
+              )}
+            </button>
+          ) : (
+            <div className="w-4 h-4" />
+          )}
+
+          <div
+            className="w-3 h-3 rounded-full border-2"
+            style={{ backgroundColor: node.level.color, borderColor: node.level.color }}
+          />
+
+          {getIcon(node.level.icon)}
+
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm truncate flex items-center gap-2">
+              {node.name}
+              {hasChildren && (
+                <Badge variant="outline" className="text-xs">
+                  {node.children.length} enfant{node.children.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 flex items-center gap-4">
+              <span>{node.level.name}</span>
+              {node.code && <span>Code: {node.code}</span>}
+              {node.population && <span><Users className="w-3 h-3 inline mr-1" />{node.population.toLocaleString()}</span>}
+            </div>
           </div>
         </div>
       </div>
-      
+
       {hasChildren && isExpanded && (
-        <div>
+        <div className="relative">
+          {/* Vertical line for children */}
+          {level >= 0 && (
+            <div
+              className="absolute border-l-2 border-gray-300"
+              style={{
+                left: (level + 1) * 20 - 10,
+                top: 0,
+                height: `${node.children.length * 50}px`
+              }}
+            />
+          )}
           {node.children.map((child) => (
             <TreeNode
               key={child.id}
@@ -159,7 +203,7 @@ export default function AdministrationPage() {
   })
   const [errors, setErrors] = useState<{ [key: string]: string }>({})
   const [newNode, setNewNode] = useState({
-    parent_id: '',
+    parent_id: 'none',
     level_id: '',
     name: '',
     code: '',
@@ -228,23 +272,60 @@ export default function AdministrationPage() {
   }
 
   const handleCreateLevel = async () => {
-    if (!validateLevel(newLevel)) return
-    
+    console.log('🎯 handleCreateLevel called')
+    console.log('📋 Form data:', newLevel)
+
+    const isValid = validateLevel(newLevel)
+    console.log('✅ Validation result:', isValid)
+    if (!isValid) {
+      console.log('❌ Validation failed, stopping execution')
+      return
+    }
+
     try {
-      const stateId = localStorage.getItem('currentOrgId')
-      if (!stateId) return
+      let stateId = localStorage.getItem('currentOrgId')
+      console.log('🏢 State ID from localStorage:', stateId)
+
+      if (!stateId) {
+        console.log('🔍 No stateId in localStorage, fetching from user profile...')
+        try {
+          const profileResponse = await authAPI.getProfile()
+          stateId = profileResponse.data.user.currentOrg
+          console.log('🏢 State ID from profile:', stateId)
+
+          if (stateId) {
+            localStorage.setItem('currentOrgId', stateId)
+            console.log('💾 Saved stateId to localStorage')
+          }
+        } catch (profileError) {
+          console.error('❌ Failed to get profile:', profileError)
+          setErrors({ general: 'Impossible de récupérer les informations utilisateur' })
+          return
+        }
+      }
+
+      if (!stateId) {
+        console.log('❌ No stateId found after all attempts, stopping execution')
+        setErrors({ general: 'ID de l\'organisation non trouvé' })
+        return
+      }
 
       if (editingLevel) {
+        console.log('✏️ Updating existing level:', editingLevel.id)
         await administrativeAPI.updateLevel(stateId, editingLevel.id, newLevel)
       } else {
-        await administrativeAPI.createLevel(stateId, newLevel)
+        console.log('➕ Creating new level with data:', { stateId, newLevel })
+        const response = await administrativeAPI.createLevel(stateId, newLevel)
+        console.log('✅ Level created successfully:', response.data)
       }
-      
+
+      console.log('🔄 Resetting form and refreshing data')
       resetLevelForm()
       setIsLevelDialogOpen(false)
       fetchData()
-    } catch (error) {
-      console.error('Error saving level:', error)
+    } catch (error: any) {
+      console.error('❌ Error saving level:', error)
+      console.error('📝 Error details:', error.response?.data || error.message)
       setErrors({ general: 'Erreur lors de la sauvegarde du niveau' })
     }
   }
@@ -304,6 +385,34 @@ export default function AdministrationPage() {
     }
   }
 
+  const getAvailableParents = () => {
+    if (!newNode.level_id) return []
+
+    const selectedLevel = levels.find(l => l.id === newNode.level_id)
+    if (!selectedLevel) return []
+
+    // Fonction récursive pour aplatir l'arbre
+    const flattenTree = (nodes: AdministrativeNode[]): AdministrativeNode[] => {
+      let result: AdministrativeNode[] = []
+      for (const node of nodes) {
+        result.push(node)
+        if (node.children && node.children.length > 0) {
+          result = result.concat(flattenTree(node.children))
+        }
+      }
+      return result
+    }
+
+    const allNodes = flattenTree(tree)
+
+    // Filtrer les nœuds qui peuvent être parents:
+    // - Niveau inférieur (level_order plus petit)
+    // - Pas le nœud lui-même (si on modifie)
+    return allNodes.filter(node =>
+      node.level.level_order < selectedLevel.level_order
+    )
+  }
+
   const handleCreateNode = async () => {
     try {
       const stateId = localStorage.getItem('currentOrgId')
@@ -311,14 +420,14 @@ export default function AdministrationPage() {
 
       const nodeData = {
         ...newNode,
-        parent_id: newNode.parent_id || undefined,
+        parent_id: newNode.parent_id === 'none' ? undefined : newNode.parent_id,
         population: newNode.population ? parseInt(newNode.population) : undefined,
         area_sqm: newNode.area_sqm ? parseFloat(newNode.area_sqm) : undefined
       }
 
       await administrativeAPI.createNode(stateId, nodeData)
       setNewNode({
-        parent_id: '',
+        parent_id: 'none',
         level_id: '',
         name: '',
         code: '',
@@ -354,6 +463,29 @@ export default function AdministrationPage() {
             <Badge variant="secondary">{selectedNode.level.name}</Badge>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const nextLevel = levels.find(l => l.level_order === selectedNode.level.level_order + 1)
+                if (nextLevel) {
+                  setNewNode({
+                    parent_id: selectedNode.id,
+                    level_id: nextLevel.id,
+                    name: '',
+                    code: '',
+                    description: '',
+                    population: '',
+                    area_sqm: ''
+                  })
+                  setIsNodeDialogOpen(true)
+                }
+              }}
+              disabled={!levels.find(l => l.level_order === selectedNode.level.level_order + 1)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter un enfant
+            </Button>
             <Button variant="outline" size="sm">
               <Edit className="w-4 h-4 mr-2" />
               Modifier
@@ -377,15 +509,20 @@ export default function AdministrationPage() {
             </div>
             <div>
               <Label className="text-sm font-medium text-gray-600">Chemin hiérarchique</Label>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded-lg">
                 {selectedNode.path.map((pathItem, index) => (
-                  <span key={index}>
-                    {pathItem}
-                    {index < selectedNode.path.length - 1 && <ChevronRight className="w-3 h-3 mx-1" />}
+                  <span key={index} className="flex items-center gap-1">
+                    <span className="text-gray-600">{pathItem}</span>
+                    <ChevronRight className="w-3 h-3 text-gray-400" />
                   </span>
                 ))}
-                {selectedNode.path.length > 0 && <ChevronRight className="w-3 h-3 mx-1" />}
-                <span className="font-medium">{selectedNode.name}</span>
+                <span className="font-medium text-blue-600 flex items-center gap-2">
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: selectedNode.level.color }}
+                  />
+                  {selectedNode.name}
+                </span>
               </div>
             </div>
           </div>
@@ -553,7 +690,13 @@ export default function AdministrationPage() {
                     </Label>
                   </div>
                 </div>
-                <Button onClick={handleCreateLevel} className="w-full">
+                <Button
+                  onClick={() => {
+                    console.log('🖱️ Button clicked: "Créer le niveau"')
+                    handleCreateLevel()
+                  }}
+                  className="w-full"
+                >
                   {editingLevel ? 'Modifier le niveau' : 'Créer le niveau'}
                 </Button>
               </div>
@@ -592,26 +735,53 @@ export default function AdministrationPage() {
                     />
                   </div>
                 </div>
-                <div>
-                  <Label htmlFor="level">Niveau administratif</Label>
-                  <Select value={newNode.level_id} onValueChange={(value) => setNewNode({ ...newNode, level_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un niveau" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {levels.map((level) => (
-                        <SelectItem key={level.id} value={level.id}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: level.color }}
-                            />
-                            {level.name}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="level">Niveau administratif</Label>
+                    <Select value={newNode.level_id} onValueChange={(value) => setNewNode({ ...newNode, level_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un niveau" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {levels.map((level) => (
+                          <SelectItem key={level.id} value={level.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: level.color }}
+                              />
+                              {level.name}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="parent">Élément parent (optionnel)</Label>
+                    <Select value={newNode.parent_id} onValueChange={(value) => setNewNode({ ...newNode, parent_id: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Aucun parent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Aucun parent</SelectItem>
+                        {getAvailableParents().map((node) => (
+                          <SelectItem key={node.id} value={node.id}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: node.level.color }}
+                              />
+                              <span>{node.name}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {node.level.name}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 <div>
                   <Label htmlFor="description">Description</Label>

@@ -54,38 +54,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const response = await authAPI.login({ email, password })
+      const { access_token, user, organization } = response.data
 
-    if (error) {
-      throw error
-    }
+      // Set token in cookies
+      setTokenInCookies(access_token, organization.id)
 
-    if (data.user) {
-      // Get user memberships to create JWT
-      const { data: memberships } = await supabase
-        .from('membership')
-        .select(`
-          *,
-          org:org_id (*)
-        `)
-        .eq('user_id', data.user.id)
+      // Store org ID in localStorage for administrative API calls
+      localStorage.setItem('currentOrgId', organization.id)
 
-      if (memberships && memberships.length > 0) {
-        // Use first organization by default
-        const firstMembership = memberships[0]
-        const token = await signJWT({
-          sub: data.user.id,
-          email: data.user.email!,
-          org_id: firstMembership.org_id,
-          role: firstMembership.role,
-        })
-
-        setTokenInCookies(token, firstMembership.org_id)
-        await refreshUser()
-      }
+      // Refresh user data
+      await refreshUser()
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Login failed')
     }
   }
 

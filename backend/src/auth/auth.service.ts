@@ -10,6 +10,11 @@ interface RegisterDto {
   orgName: string;
 }
 
+interface LoginDto {
+  email: string;
+  password: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -99,6 +104,83 @@ export class AuthService {
     }
   }
 
+  async login(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+    const supabase = this.supabaseService.getClient();
+
+    try {
+      // Authenticate with Supabase
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (authError) {
+        throw new Error(`Authentication failed: ${authError.message}`);
+      }
+
+      if (!authData.user || !authData.session) {
+        throw new Error('Login failed');
+      }
+
+      // Get user memberships to determine default org
+      const { data: memberships, error: membershipError } = await supabase
+        .from('membership')
+        .select(`
+          role,
+          org:org_id (
+            id,
+            name,
+            slug,
+            subscription_status
+          )
+        `)
+        .eq('user_id', authData.user.id);
+
+      if (membershipError) {
+        throw new Error(`Failed to fetch memberships: ${membershipError.message}`);
+      }
+
+      if (!memberships || memberships.length === 0) {
+        throw new Error('No organization memberships found');
+      }
+
+      // Use the first org (or admin org if available)
+      const defaultMembership = memberships.find(m => m.role === 'admin') || memberships[0];
+      const org = defaultMembership.org as any;
+
+      // Create JWT payload
+      const jwtPayload: Omit<JwtPayload, 'iat' | 'exp'> = {
+        sub: authData.user.id,
+        email: authData.user.email!,
+        org_id: org.id,
+        role: defaultMembership.role,
+      };
+
+      // Generate JWT token
+      const accessToken = await this.generateJwtToken(jwtPayload);
+
+      return {
+        access_token: accessToken,
+        token_type: 'Bearer',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          org_id: org.id,
+          role: defaultMembership.role,
+        },
+        organization: {
+          id: org.id,
+          name: org.name,
+          slug: org.slug,
+        }
+      };
+
+    } catch (error: any) {
+      throw new Error(`Login failed: ${error.message}`);
+    }
+  }
+
   async generateJwtToken(payload: Omit<JwtPayload, 'iat' | 'exp'>): Promise<string> {
     return this.jwtService.sign(payload);
   }
@@ -110,6 +192,21 @@ export class AuthService {
     } catch (error) {
       return null;
     }
+  }
+
+  async getUserProfile(userId: string) {
+    const supabase = this.supabaseService.getClient();
+    const { data, error } = await supabase
+      .from('user_profile')
+      .select('id, email, full_name, avatar_url')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to fetch user profile: ${error.message}`);
+    }
+
+    return data;
   }
 
   async getUserMemberships(userId: string) {
