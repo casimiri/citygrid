@@ -21,18 +21,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
-import { 
-  ChevronRight, 
-  ChevronDown, 
-  Plus, 
-  MapPin, 
-  Users, 
+import {
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  MapPin,
+  Users,
   Building,
   Settings,
   Edit,
-  Trash
+  Trash,
+  Download
 } from 'lucide-react'
 import { administrativeAPI, authAPI } from '@/lib/api'
+import * as XLSX from 'xlsx'
 
 interface AdministrativeLevel {
   id: string
@@ -257,6 +259,166 @@ export default function AdministrationPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Helper function to flatten tree for export
+  const flattenTree = (nodes: AdministrativeNode[], parentPath: string = ''): any[] => {
+    const result: any[] = []
+
+    nodes.forEach(node => {
+      const currentPath = parentPath ? `${parentPath} > ${node.name}` : node.name
+
+      result.push({
+        'ID': node.id,
+        'Nom': node.name,
+        'Code': node.code || '',
+        'Parent_ID': node.parent_id || '',
+        'Niveau_ID': node.level.id,
+        'Niveau Administratif': node.level.name,
+        'Ordre du Niveau': node.level.level_order,
+        'Description': node.description || '',
+        'Population': node.population || '',
+        'Superficie (m²)': node.area_sqm || '',
+        'Superficie (km²)': node.area_sqm ? (node.area_sqm / 1000000).toFixed(2) : '',
+        'Chemin Hiérarchique': currentPath,
+        'Profondeur': node.depth,
+        'Nombre d\'Enfants': node.children?.length || 0,
+        'Parent': parentPath || 'Racine'
+      })
+
+      if (node.children && node.children.length > 0) {
+        result.push(...flattenTree(node.children, currentPath))
+      }
+    })
+
+    return result
+  }
+
+  // Export Administrative Tree to Excel
+  const exportTreeToExcel = () => {
+    try {
+      const flatData = flattenTree(tree)
+
+      if (flatData.length === 0) {
+        alert('Aucune donnée à exporter')
+        return
+      }
+
+      const worksheet = XLSX.utils.json_to_sheet(flatData)
+      const workbook = XLSX.utils.book_new()
+
+      // Set column widths
+      const colWidths = [
+        { wch: 30 }, // ID
+        { wch: 25 }, // Nom
+        { wch: 10 }, // Code
+        { wch: 30 }, // Parent_ID
+        { wch: 30 }, // Niveau_ID
+        { wch: 20 }, // Niveau Administratif
+        { wch: 15 }, // Ordre du Niveau
+        { wch: 30 }, // Description
+        { wch: 15 }, // Population
+        { wch: 15 }, // Superficie (m²)
+        { wch: 15 }, // Superficie (km²)
+        { wch: 40 }, // Chemin Hiérarchique
+        { wch: 10 }, // Profondeur
+        { wch: 15 }, // Nombre d'Enfants
+        { wch: 25 }  // Parent
+      ]
+      worksheet['!cols'] = colWidths
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Données')
+
+      // Add instructions sheet for import
+      const instructions = [
+        { 'Instructions pour l\'importation': 'Colonnes requises pour la mise à jour:' },
+        { 'Instructions pour l\'importation': 'ID - Identifiant unique (ne pas modifier)' },
+        { 'Instructions pour l\'importation': 'Nom - Nom du nœud administratif' },
+        { 'Instructions pour l\'importation': 'Code - Code unique (optionnel)' },
+        { 'Instructions pour l\'importation': 'Parent_ID - ID du parent (laisser vide pour racine)' },
+        { 'Instructions pour l\'importation': 'Niveau_ID - ID du niveau administratif' },
+        { 'Instructions pour l\'importation': 'Description - Description (optionnel)' },
+        { 'Instructions pour l\'importation': 'Population - Nombre d\'habitants (optionnel)' },
+        { 'Instructions pour l\'importation': 'Superficie (m²) - Surface en mètres carrés (optionnel)' },
+        { 'Instructions pour l\'importation': '' },
+        { 'Instructions pour l\'importation': 'Colonnes en lecture seule (informatives):' },
+        { 'Instructions pour l\'importation': '- Niveau Administratif (nom du niveau)' },
+        { 'Instructions pour l\'importation': '- Ordre du Niveau' },
+        { 'Instructions pour l\'importation': '- Superficie (km²) (calculée automatiquement)' },
+        { 'Instructions pour l\'importation': '- Chemin Hiérarchique' },
+        { 'Instructions pour l\'importation': '- Profondeur, Nombre d\'Enfants, Parent' }
+      ]
+
+      const instructionsSheet = XLSX.utils.json_to_sheet(instructions)
+      instructionsSheet['!cols'] = [{ wch: 60 }]
+      XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions')
+
+      // Add metadata sheet
+      const currentDate = new Date()
+      const metadata = [
+        { 'Métadonnées': 'Informations sur l\'export' },
+        { 'Métadonnées': `Date d'export: ${currentDate.toLocaleString('fr-FR')}` },
+        { 'Métadonnées': `Nombre total de nœuds: ${flatData.length}` },
+        { 'Métadonnées': `Source: Arborescence Administrative CityGrid` },
+        { 'Métadonnées': '' },
+        { 'Métadonnées': 'Pour importer des modifications:' },
+        { 'Métadonnées': '1. Modifiez uniquement les colonnes autorisées' },
+        { 'Métadonnées': '2. Gardez les IDs intacts' },
+        { 'Métadonnées': '3. Respectez les relations parent-enfant' },
+        { 'Métadonnées': '4. Utilisez la fonction d\'import du système' }
+      ]
+
+      const metadataSheet = XLSX.utils.json_to_sheet(metadata)
+      metadataSheet['!cols'] = [{ wch: 50 }]
+      XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Métadonnées')
+
+      const fileName = `arborescence_administrative_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(workbook, fileName)
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error)
+      alert('Erreur lors de l\'export vers Excel')
+    }
+  }
+
+  // Export Administrative Levels to Excel
+  const exportLevelsToExcel = () => {
+    try {
+      if (levels.length === 0) {
+        alert('Aucun niveau administratif à exporter')
+        return
+      }
+
+      const levelsData = levels.map(level => ({
+        'Nom': level.name,
+        'Code': level.code,
+        'Ordre': level.level_order,
+        'Couleur': level.color,
+        'Icône': level.icon,
+        'Nécessite un Parent': level.requires_parent ? 'Oui' : 'Non'
+      }))
+
+      const worksheet = XLSX.utils.json_to_sheet(levelsData)
+      const workbook = XLSX.utils.book_new()
+
+      // Set column widths
+      const colWidths = [
+        { wch: 25 }, // Nom
+        { wch: 10 }, // Code
+        { wch: 10 }, // Ordre
+        { wch: 15 }, // Couleur
+        { wch: 15 }, // Icône
+        { wch: 20 }  // Nécessite un Parent
+      ]
+      worksheet['!cols'] = colWidths
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Niveaux Administratifs')
+
+      const fileName = `niveaux_administratifs_${new Date().toISOString().split('T')[0]}.xlsx`
+      XLSX.writeFile(workbook, fileName)
+    } catch (error) {
+      console.error('Erreur lors de l\'export:', error)
+      alert('Erreur lors de l\'export vers Excel')
+    }
+  }
 
   const resetLevelForm = () => {
     setNewLevel({
@@ -812,13 +974,26 @@ export default function AdministrationPage() {
         {/* Arborescence */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building className="w-5 h-5" />
-              Arborescence Administrative
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              Cliquez sur un élément pour voir ses détails
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="w-5 h-5" />
+                  Arborescence Administrative
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Cliquez sur un élément pour voir ses détails
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportTreeToExcel}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export Excel
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="max-h-96 overflow-y-auto">
             {tree.length > 0 ? (
@@ -856,13 +1031,26 @@ export default function AdministrationPage() {
       {levels.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Configuration des niveaux administratifs
-              <Badge variant="outline">{levels.length} niveau{levels.length > 1 ? 'x' : ''}</Badge>
-            </CardTitle>
-            <p className="text-sm text-gray-600">
-              Gérez les niveaux hiérarchiques de votre structure administrative
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  Configuration des niveaux administratifs
+                  <Badge variant="outline">{levels.length} niveau{levels.length > 1 ? 'x' : ''}</Badge>
+                </CardTitle>
+                <p className="text-sm text-gray-600">
+                  Gérez les niveaux hiérarchiques de votre structure administrative
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={exportLevelsToExcel}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export Excel
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
