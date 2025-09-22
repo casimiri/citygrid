@@ -58,9 +58,20 @@ export const projectsAPI = {
 
 export const referentielAPI = {
   getCategories: () => api.get('/referentiel/categories'),
-  getTypes: (categoryId?: string) => 
+  createCategory: (data: { name: string; description: string; color: string }) =>
+    api.post('/referentiel/categories', data),
+  getTypes: (categoryId?: string) =>
     api.get('/referentiel/types', { params: { categoryId } }),
+  createType: (data: { name: string; description: string; icon: string; categoryId: string; superficie?: number; thresholdIds?: string[]; areaRequirementIds?: string[]; administrativeLevelIds?: string[] }) =>
+    api.post('/referentiel/types', data),
   getThresholds: () => api.get('/referentiel/thresholds'),
+  getProgrammingThresholds: () => api.get('/referentiel/programming-thresholds'),
+  createProgrammingThreshold: (data: { name: string; min_population?: number; max_distance_meters?: number; min_area_sqm?: number }) =>
+    api.post('/referentiel/programming-thresholds', data),
+  getAreaRequirements: () => api.get('/referentiel/area-requirements'),
+  createAreaRequirement: (data: { zone_type: string }) =>
+    api.post('/referentiel/area-requirements', data),
+  getAdministrativeLevels: () => api.get('/referentiel/administrative-levels'),
   checkConformity: (data: any) => api.post('/referentiel/checks/conformity', data),
 }
 
