@@ -231,6 +231,28 @@ export class AuthService {
     return data;
   }
 
+  async logout(userId: string) {
+    const supabase = this.supabaseService.getClient();
+
+    try {
+      // Optional: Log the logout event for audit purposes
+      // You could add additional logic here like:
+      // - Blacklisting tokens (if you implement a token blacklist)
+      // - Logging user activity
+      // - Clearing server-side sessions
+
+      // Sign out from Supabase (this is optional since we're using JWT)
+      await supabase.auth.signOut();
+
+      return {
+        message: 'Successfully logged out',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error: any) {
+      throw new Error(`Logout failed: ${error.message}`);
+    }
+  }
+
   async createAuditLog(
     orgId: string,
     userId: string,

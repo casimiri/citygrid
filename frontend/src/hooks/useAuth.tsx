@@ -72,12 +72,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    try {
+      // Call backend logout endpoint (optional - handles server-side cleanup)
+      await authAPI.logout()
+    } catch (error) {
+      // Continue with logout even if backend call fails
+      console.warn('Backend logout failed:', error)
+    }
+
+    // Clear client-side authentication state
     await supabase.auth.signOut()
     removeTokenFromCookies()
+    localStorage.removeItem('currentOrgId')
     setUser(null)
     setOrganization(null)
     setMemberships([])
     setRole(null)
+
+    // Redirect to login page
+    window.location.href = '/login'
   }
 
   const switchOrg = async (orgId: string, role: string) => {

@@ -745,13 +745,7 @@ export default function AdministrationPage() {
                       <SelectContent>
                         {levels.map((level) => (
                           <SelectItem key={level.id} value={level.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: level.color }}
-                              />
-                              {level.name}
-                            </div>
+                            {level.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -767,16 +761,7 @@ export default function AdministrationPage() {
                         <SelectItem value="none">Aucun parent</SelectItem>
                         {getAvailableParents().map((node) => (
                           <SelectItem key={node.id} value={node.id}>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: node.level.color }}
-                              />
-                              <span>{node.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {node.level.name}
-                              </Badge>
-                            </div>
+                            {node.name} ({node.level.name})
                           </SelectItem>
                         ))}
                       </SelectContent>

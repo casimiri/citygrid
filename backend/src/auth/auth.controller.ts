@@ -64,4 +64,12 @@ export class AuthController {
   async getMemberships(@CurrentUser() user: JwtPayload) {
     return this.authService.getUserMemberships(user.sub);
   }
+
+  @Post('logout')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Logout user' })
+  async logout(@CurrentUser() user: JwtPayload) {
+    return this.authService.logout(user.sub);
+  }
 }

@@ -41,7 +41,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const locale = pathname.split('/')[1] || 'fr'
 
   const handleSignOut = async () => {
-    await signOut()
+    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+      await signOut()
+    }
   }
 
   const handleSwitchOrg = async (orgId: string, newRole: string) => {
