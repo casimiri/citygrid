@@ -54,6 +54,15 @@ export const orgAPI = {
 export const projectsAPI = {
   getAll: () => api.get('/projects'),
   getById: (id: string) => api.get(`/projects/${id}`),
+  create: (data: {
+    name: string;
+    description: string;
+    address?: string;
+    area_sqm?: number;
+    status?: string;
+    administrative_node_id?: string;
+    area_requirement_ids?: string[];
+  }) => api.post('/projects', data),
 }
 
 export const referentielAPI = {
@@ -93,9 +102,9 @@ export const administrativeAPI = {
   getNodeChildren: (nodeId: string) => api.get(`/administrative/nodes/${nodeId}/children`),
   getNodeHierarchy: (nodeId: string) => api.get(`/administrative/nodes/${nodeId}/hierarchy`),
   getNodeSubtree: (nodeId: string) => api.get(`/administrative/nodes/${nodeId}/subtree`),
-  getNodeProjects: (nodeId: string, includeChildren = false) => 
+  getNodeProjects: (nodeId: string, includeChildren = false) =>
     api.get(`/administrative/nodes/${nodeId}/projects?includeChildren=${includeChildren}`),
   assignUserToNode: (nodeId: string, data: any) => api.post(`/administrative/nodes/${nodeId}/users`, data),
-  getUserAdministrativeNodes: (stateId: string, userId: string) => 
+  getUserAdministrativeNodes: (stateId: string, userId: string) =>
     api.get(`/administrative/states/${stateId}/users/${userId}/nodes`),
 }

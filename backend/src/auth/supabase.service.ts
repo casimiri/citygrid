@@ -17,6 +17,22 @@ export class SupabaseService {
     return this.supabase;
   }
 
+  getClientWithAuth(accessToken: string): SupabaseClient {
+    const clientWithAuth = createClient(
+      this.configService.get('SUPABASE_URL'),
+      this.configService.get('SUPABASE_SERVICE_ROLE_KEY'),
+      {
+        global: {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      }
+    );
+
+    return clientWithAuth;
+  }
+
   async query(query: string, params: any[] = []) {
     const { data, error } = await this.supabase.rpc('execute_sql', {
       query,

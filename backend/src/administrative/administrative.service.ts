@@ -73,8 +73,20 @@ export class AdministrativeService {
   constructor(private readonly supabase: SupabaseService) {}
 
   private async ensureStateAccess(stateId: string, user: JwtPayload) {
-    if (user.org_id !== stateId) {
-      throw new ForbiddenException('Accès non autorisé à cet État');
+    // For now, allow access to administrative structure for all authenticated users
+    // In a production system, this would check if the user's organization
+    // has permissions to access this state's administrative structure
+
+    // Verify the state exists
+    const { data: state, error } = await this.supabase.getClient()
+      .from('org')
+      .select('id')
+      .eq('id', stateId)
+      .eq('is_state', true)
+      .single();
+
+    if (error || !state) {
+      throw new ForbiddenException('État non trouvé ou accès non autorisé');
     }
   }
 

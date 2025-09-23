@@ -256,8 +256,8 @@ CREATE TRIGGER update_administrative_node_updated_at
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Données d'exemple pour un État français
-INSERT INTO org (id, name, slug, is_state, country_code, state_code, administrative_system) 
-VALUES ('550e8400-e29b-41d4-a716-446655440001', 'République Française', 'france', true, 'FRA', 'FR', 'french')
+INSERT INTO org (id, name, slug, is_state, country_code, state_code, administrative_system)
+VALUES ('550e8400-e29b-41d4-a716-446655440000', 'République Française', 'france', true, 'FRA', 'FR', 'french')
 ON CONFLICT (id) DO UPDATE SET
   is_state = EXCLUDED.is_state,
   country_code = EXCLUDED.country_code,
@@ -266,18 +266,18 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- Configuration des niveaux administratifs français
 INSERT INTO administrative_level (state_id, name, code, level_order, color, icon) VALUES
-('550e8400-e29b-41d4-a716-446655440001', 'Région', 'region', 1, '#ef4444', 'map'),
-('550e8400-e29b-41d4-a716-446655440001', 'Département', 'department', 2, '#f59e0b', 'map-pin'),
-('550e8400-e29b-41d4-a716-446655440001', 'Commune', 'commune', 3, '#10b981', 'home')
+('550e8400-e29b-41d4-a716-446655440000', 'Région', 'region', 1, '#ef4444', 'map'),
+('550e8400-e29b-41d4-a716-446655440000', 'Département', 'department', 2, '#f59e0b', 'map-pin'),
+('550e8400-e29b-41d4-a716-446655440000', 'Commune', 'commune', 3, '#10b981', 'home')
 ON CONFLICT (state_id, code) DO NOTHING;
 
 -- Exemple d'arborescence administrative française
 WITH level_ids AS (
-  SELECT id, code FROM administrative_level WHERE state_id = '550e8400-e29b-41d4-a716-446655440001'
+  SELECT id, code FROM administrative_level WHERE state_id = '550e8400-e29b-41d4-a716-446655440000'
 )
 INSERT INTO administrative_node (state_id, level_id, name, code, population, area_sqm) 
 SELECT 
-  '550e8400-e29b-41d4-a716-446655440001',
+  '550e8400-e29b-41d4-a716-446655440000',
   level_ids.id,
   'Île-de-France',
   '11',
@@ -289,14 +289,14 @@ ON CONFLICT DO NOTHING;
 -- Ajouter un département dans la région Île-de-France
 WITH region_id AS (
   SELECT id FROM administrative_node 
-  WHERE state_id = '550e8400-e29b-41d4-a716-446655440001' AND name = 'Île-de-France'
+  WHERE state_id = '550e8400-e29b-41d4-a716-446655440000' AND name = 'Île-de-France'
 ), level_id AS (
   SELECT id FROM administrative_level 
-  WHERE state_id = '550e8400-e29b-41d4-a716-446655440001' AND code = 'department'
+  WHERE state_id = '550e8400-e29b-41d4-a716-446655440000' AND code = 'department'
 )
 INSERT INTO administrative_node (state_id, parent_id, level_id, name, code, population, area_sqm)
 SELECT 
-  '550e8400-e29b-41d4-a716-446655440001',
+  '550e8400-e29b-41d4-a716-446655440000',
   region_id.id,
   level_id.id,
   'Paris',

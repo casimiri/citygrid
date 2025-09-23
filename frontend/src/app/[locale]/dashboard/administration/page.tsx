@@ -33,7 +33,7 @@ import {
   Trash,
   Download
 } from 'lucide-react'
-import { administrativeAPI, authAPI } from '@/lib/api'
+import { administrativeAPI, authAPI, orgAPI } from '@/lib/api'
 import * as XLSX from 'xlsx'
 
 interface AdministrativeLevel {
@@ -58,6 +58,36 @@ interface AdministrativeNode {
   children: AdministrativeNode[]
   depth: number
   path: string[]
+}
+
+interface UserAdministrativeAssignment {
+  id: string
+  user_id: string
+  node_id: string
+  role: string
+  scope: 'node' | 'subtree'
+  active: boolean
+  appointed_at: string
+  expires_at?: string
+  node: {
+    id: string
+    name: string
+    code?: string
+    level: AdministrativeLevel
+  }
+}
+
+interface Organization {
+  id: string
+  name: string
+  slug: string
+  is_state: boolean
+  country_code?: string
+  state_code?: string
+  administrative_system?: string
+  subscription_status: string
+  created_at: string
+  updated_at: string
 }
 
 interface TreeNodeProps {
@@ -190,6 +220,8 @@ function TreeNode({ node, onNodeClick, selectedNode, level }: TreeNodeProps) {
 export default function AdministrationPage() {
   const [levels, setLevels] = useState<AdministrativeLevel[]>([])
   const [tree, setTree] = useState<AdministrativeNode[]>([])
+  const [userAssignments, setUserAssignments] = useState<UserAdministrativeAssignment[]>([])
+  const [organization, setOrganization] = useState<Organization | null>(null)
   const [selectedNode, setSelectedNode] = useState<AdministrativeNode | null>(null)
   const [loading, setLoading] = useState(true)
   const [isLevelDialogOpen, setIsLevelDialogOpen] = useState(false)
@@ -239,18 +271,44 @@ export default function AdministrationPage() {
 
   const fetchData = async () => {
     try {
-      const stateId = localStorage.getItem('currentOrgId') // Récupérer l'ID de l'État actuel
-      if (!stateId) return
+      // Get current organization first
+      const orgResponse = await orgAPI.getCurrent()
+      const currentOrg = orgResponse.data
+      setOrganization(currentOrg)
 
+      // Use the current organization ID as the state ID for administrative structure
+      const stateId = currentOrg.id
+
+      // Store current org ID in localStorage for consistency
+      localStorage.setItem('currentOrgId', stateId)
+
+      // Fetch administrative levels and tree for this organization
       const [levelsResponse, treeResponse] = await Promise.all([
         administrativeAPI.getLevels(stateId),
         administrativeAPI.getTree(stateId)
       ])
 
-      setLevels(levelsResponse.data)
-      setTree(treeResponse.data)
+      setLevels(levelsResponse.data || [])
+      setTree(treeResponse.data || [])
+
+      // Try to get user profile and assignments
+      try {
+        const profileResponse = await authAPI.getProfile()
+        const userId = profileResponse.data.id
+        const userAssignmentsResponse = await administrativeAPI.getUserAdministrativeNodes(stateId, userId)
+        setUserAssignments(userAssignmentsResponse.data || [])
+      } catch (authError) {
+        console.log('Could not fetch user assignments:', authError)
+        setUserAssignments([])
+      }
+
     } catch (error) {
-      console.error('Error fetching administrative data:', error)
+      console.error('Error fetching data:', error)
+      // Reset state on error
+      setOrganization(null)
+      setLevels([])
+      setTree([])
+      setUserAssignments([])
     } finally {
       setLoading(false)
     }
@@ -969,6 +1027,143 @@ export default function AdministrationPage() {
           </Dialog>
         </div>
       </div>
+
+      {/* Organization Details Section */}
+      {organization && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building className="w-5 h-5" />
+              Informations de l'organisation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Nom de l'organisation</Label>
+                  <p className="text-lg font-semibold text-gray-900">{organization.name}</p>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Identifiant</Label>
+                  <p className="text-sm text-gray-700 font-mono bg-gray-50 px-2 py-1 rounded">
+                    {organization.slug}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Type d'organisation</Label>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={organization.is_state ? "default" : "secondary"}>
+                      {organization.is_state ? "État" : "Organisation"}
+                    </Badge>
+                    {organization.is_state && organization.country_code && (
+                      <Badge variant="outline">{organization.country_code}</Badge>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Système administratif</Label>
+                  <p className="text-sm text-gray-700 capitalize">
+                    {organization.administrative_system || 'Non défini'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Statut d'abonnement</Label>
+                  <Badge
+                    variant={organization.subscription_status === 'active' ? 'default' : 'destructive'}
+                    className="capitalize"
+                  >
+                    {organization.subscription_status}
+                  </Badge>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-gray-600">Créé le</Label>
+                  <p className="text-sm text-gray-700">
+                    {new Date(organization.created_at).toLocaleDateString('fr-FR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {organization.is_state && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex items-start gap-3">
+                  <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-900">Organisation étatique</h4>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Cette organisation représente un État et peut gérer sa propre structure administrative hiérarchique.
+                      {organization.state_code && ` Code d'État: ${organization.state_code}`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* User Administrative Assignments Section */}
+      {userAssignments.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Mes Responsabilités Administratives
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {userAssignments.map((assignment) => (
+                <div
+                  key={assignment.id}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  style={{ borderColor: assignment.node.level.color }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: assignment.node.level.color }}
+                      />
+                      <span className="text-sm text-gray-600">
+                        {assignment.node.level.name}
+                      </span>
+                    </div>
+                    <Badge variant="secondary" className="text-xs">
+                      {assignment.role}
+                    </Badge>
+                  </div>
+                  <h4 className="font-semibold text-gray-900 mb-1">
+                    {assignment.node.name}
+                  </h4>
+                  {assignment.node.code && (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Code: {assignment.node.code}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>Portée: {assignment.scope === 'subtree' ? 'Arbre' : 'Nœud'}</span>
+                    {assignment.expires_at && (
+                      <span>Expire: {new Date(assignment.expires_at).toLocaleDateString('fr-FR')}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Arborescence */}
