@@ -72,7 +72,7 @@ Ensure these environment variables are set in `frontend/.env.local`:
 
 ```bash
 NEXT_PUBLIC_API_URL=https://your-codespace-name-3001.app.github.dev/api/v1
-NEXT_PUBLIC_JWT_SECRET=S9TkK0aQBQjN8p71ZOY64/qzkd4t08NAE0ihGDXaTUyaDG6Z6RgTmxuWqGWEfXxvK/6Mlo44XVleZWdDh2He1g==
+NEXT_PUBLIC_JWT_SECRET=
 ```
 
 Replace `your-codespace-name` with your actual Codespace name.
